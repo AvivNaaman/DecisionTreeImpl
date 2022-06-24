@@ -168,9 +168,8 @@ public class DataSet {
     if (instances.size() == 0) return true;
     String firstLabel = instances.get(0).label;
     for (Instance i : instances) {
-      if (!firstLabel.equals(i.label)) {
+      if (!firstLabel.equals(i.label))
         return false;
-      }
     }
     return true;
   }
@@ -179,8 +178,10 @@ public class DataSet {
     String mostImportant = null;
     double minRemainder = Double.MAX_VALUE;
     for (String attribute : attributes) {
-      if (attributeRemainder(attribute) < minRemainder) {
+      double r = attributeRemainder(attribute);
+      if (r < minRemainder) {
         mostImportant = attribute;
+        minRemainder = r;
       }
     }
     return mostImportant;
@@ -190,9 +191,11 @@ public class DataSet {
     double simpleSum = 0;
     for (String attributeValue : attributeValues.get(attribute)) {
       int[] vals = getFilteredCounts(attribute, attributeValue);
-      simpleSum += (Arrays.stream(vals).sum()) * B(vals);
+      double b = B(vals);
+      simpleSum += (Arrays.stream(vals).sum()) * b;
     }
-    return simpleSum / (instances.size());
+    double r = simpleSum / (instances.size());
+    return r;
   }
 
   public double B() {
@@ -202,7 +205,8 @@ public class DataSet {
   private double B(int[] vals) {
     double sum = 0;
     for (int val : vals) {
-      sum += val * Math.log(val);
+      if (val == 0) continue;
+      sum += val * log2(val);
     }
     return -sum;
   }
@@ -236,5 +240,10 @@ public class DataSet {
         result.instances.add(i);
     }
     return result;
+  }
+
+  private final static double LOGE2 = Math.log(2);
+  public static double log2(double x) {
+    return Math.log(x) / LOGE2;
   }
 }

@@ -93,7 +93,7 @@ public class DecisionTreeImpl extends DecisionTree {
     // TODO: add code here
     for (String attribute : this.attributes) {
       double currGain = globalB - train.attributeRemainder(attribute);
-      System.out.printf("%s %.5f", attribute, currGain);
+      System.out.printf("%s %.5f\n", attribute, currGain);
     }
   }
 
@@ -105,7 +105,7 @@ public class DecisionTreeImpl extends DecisionTree {
       if (this.classify(i).equals(i.label))
         rightCount += 1;
     }
-    System.out.printf("Accuracy: %.5f", rightCount / instanceCount);
+    System.out.printf("%.5f\n", rightCount / instanceCount);
   }
 
   /**
