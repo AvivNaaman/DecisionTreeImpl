@@ -1,0 +1,13 @@
+%%,Y,N
+##,Guns,y,n
+##,Comedy,y,n
+##,Clowns,y,n
+y,n,n,N
+n,n,y,Y
+n,n,n,N
+n,y,n,Y
+n,y,y,N
+n,n,y,Y
+y,y,n,N
+y,n,y,Y
+y,y,y,N

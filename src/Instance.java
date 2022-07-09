@@ -18,8 +18,4 @@ public class Instance {
     }
     attributes.add(i);
   }
-
-  public String getLabel() {
-    return label;
-  }
 }

@@ -1,6 +1,4 @@
 import java.util.*;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 /**
  * Fill in the implementation details of the class DecisionTree using this file. Any methods or
@@ -44,19 +42,19 @@ public class DecisionTreeImpl extends DecisionTree {
   private DecTreeNode buildTree(DataSet examples, List<String> leftAttributes,
                                 DataSet parentExamples, String parentVal) {
     // stopping criteria
-    if (examples.instances.size() == 0) return genTerminalNode(parentExamples.pluralityValue(), parentVal);
-    else if (examples.allLabeledSame()) return genTerminalNode(examples.instances.get(0).label, parentVal);
-    else if (leftAttributes.size() == 0) return genTerminalNode(examples.pluralityValue(), parentVal);
+    if (examples.instances.size() == 0) return genTerminalNode(pluralityValue(parentExamples), parentVal);
+    else if (allLabeledSame(examples)) return genTerminalNode(examples.instances.get(0).label, parentVal);
+    else if (leftAttributes.size() == 0) return genTerminalNode(pluralityValue(examples), parentVal);
     else {
       // find most important in dataset, from the current left attributes.
-      String mostImportantAttribute = examples.getMostImportantAttribute(leftAttributes);
+      String mostImportantAttribute = mostImportantAttribute(examples, leftAttributes);
       DecTreeNode toReturn = new DecTreeNode(null, mostImportantAttribute, parentVal, false);
       // clone, just without the currently used one.
       List<String> attributesWithoutMostImportant = new ArrayList<String>(leftAttributes);
       attributesWithoutMostImportant.remove(mostImportantAttribute);
       // build children nodes by attribute values
       for (String attributeValue : attributeValues.get(mostImportantAttribute)) {
-        DataSet nextExamples = examples.getFiltered(mostImportantAttribute, attributeValue);
+        DataSet nextExamples = filterDataSet(examples, mostImportantAttribute, attributeValue);
         toReturn.addChild(buildTree(nextExamples, attributesWithoutMostImportant, examples, attributeValue));
       }
       return toReturn;
@@ -89,10 +87,9 @@ public class DecisionTreeImpl extends DecisionTree {
     this.labels = train.labels;
     this.attributes = train.attributes;
     this.attributeValues = train.attributeValues;
-    double globalB = train.B();
-    // TODO: add code here
+    double globalB = B(train);
     for (String attribute : this.attributes) {
-      double currGain = globalB - train.attributeRemainder(attribute);
+      double currGain = globalB - attributeRemainder(train, attribute);
       System.out.printf("%s %.5f\n", attribute, currGain);
     }
   }
@@ -194,5 +191,104 @@ public class DecisionTreeImpl extends DecisionTree {
       }
     }
     return -1;
+  }
+
+  /* DATASET HELPER METHODS */
+
+  public String pluralityValue(DataSet ds) {
+    String currMaxLabel = null;
+    int currMaxLabelCount = 0;
+    int[] labelCounts = new int[labels.size()];
+    for (Instance i: ds.instances) {
+      int c = ++labelCounts[labels.indexOf(i.label)];
+      if (c > currMaxLabelCount) {
+        currMaxLabelCount = c;
+        currMaxLabel = i.label;
+      }
+    }
+    return currMaxLabel;
+  }
+
+  public boolean allLabeledSame(DataSet ds) {
+    if (ds.instances.size() == 0) return true;
+    String firstLabel = ds.instances.get(0).label;
+    for (Instance i : ds.instances) {
+      if (!firstLabel.equals(i.label))
+        return false;
+    }
+    return true;
+  }
+
+  public String mostImportantAttribute(DataSet ds, List<String> attributes) {
+    String mostImportant = null;
+    double minRemainder = Double.MAX_VALUE;
+    for (String attribute : attributes) {
+      double r = attributeRemainder(ds, attribute);
+      if (r < minRemainder) {
+        mostImportant = attribute;
+        minRemainder = r;
+      }
+    }
+    return mostImportant;
+  }
+
+  public double attributeRemainder(DataSet ds, String attribute) {
+    double simpleSum = 0;
+    for (String attributeValue : attributeValues.get(attribute)) {
+      int[] vals = filteredLabelCount(ds, attribute, attributeValue);
+      simpleSum += (Arrays.stream(vals).sum()) * B(vals);
+    }
+    return simpleSum / (ds.instances.size());
+  }
+
+  public double B(DataSet ds) {
+    return B(countLabels(ds));
+  }
+
+  private static double B(int[] attributesCount) {
+    double sum = 0;
+    double total_vals = Arrays.stream(attributesCount).sum();
+    for (int val : attributesCount) {
+      if (val == 0) continue;
+      double q = val / total_vals;
+      sum += - q * log2(q);
+    }
+    return sum;
+  }
+
+  /** Split by label, filter by attr value. */
+  private int[] filteredLabelCount(DataSet ds, String attribute, String value) {
+    int[] output = new int[labels.size()];
+    for (Instance i : ds.instances) {
+      if (i.attributes.get(attributes.indexOf(attribute)).equals(value))
+        output[labels.indexOf(i.label)] += 1 ;
+    }
+    return output;
+  }
+
+  private int[] countLabels(DataSet ds) {
+    int[] output = new int[labels.size()];
+    for (Instance i : ds.instances) {
+      output[labels.indexOf(i.label)] += 1 ;
+    }
+    return output;
+  }
+
+  public DataSet filterDataSet(DataSet ds, String attribute, String value) {
+    DataSet result = new DataSet();
+    result.attributeValues = attributeValues;
+    result.attributes = attributes;
+    result.labels = labels;
+    result.instances = new ArrayList<Instance>();
+    for (Instance i : ds.instances) {
+      if (i.attributes.get(attributes.indexOf(attribute)).equals(value))
+        result.instances.add(i);
+    }
+    return result;
+  }
+
+  private final static double LOGE2 = Math.log(2);
+  public static double log2(double x) {
+    return Math.log(x) / LOGE2;
   }
 }
